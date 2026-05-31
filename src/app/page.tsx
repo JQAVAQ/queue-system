@@ -8,13 +8,13 @@ interface QueueUser {
   position: number;
   status: string;
   failCount: number;
+  estimatedDate: string;
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   WAITING: { label: "未认证", color: "bg-yellow-100 text-yellow-800" },
   AUTHENTICATING: { label: "正在认证", color: "bg-blue-100 text-blue-800" },
   FAILED: { label: "认证失败", color: "bg-red-100 text-red-800" },
-  TIMEOUT: { label: "已超时", color: "bg-gray-100 text-gray-800" },
 };
 
 export default function QueuePage() {
@@ -67,9 +67,10 @@ export default function QueuePage() {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="grid grid-cols-[60px_1fr_120px] gap-4 px-4 py-3 bg-gray-50 border-b font-medium text-sm text-gray-600">
+            <div className="grid grid-cols-[60px_1fr_1fr_120px] gap-4 px-4 py-3 bg-gray-50 border-b font-medium text-sm text-gray-700">
               <div>序号</div>
               <div>昵称</div>
+              <div>预计认证日期</div>
               <div>状态</div>
             </div>
             {users.map((user, index) => {
@@ -77,11 +78,11 @@ export default function QueuePage() {
               return (
                 <div
                   key={user.id}
-                  className={`grid grid-cols-[60px_1fr_120px] gap-4 px-4 py-3 border-b last:border-b-0 hover:bg-gray-50 transition-colors ${
+                  className={`grid grid-cols-[60px_1fr_1fr_120px] gap-4 px-4 py-3 border-b last:border-b-0 hover:bg-gray-50 transition-colors ${
                     user.status === "AUTHENTICATING" ? "bg-blue-50" : ""
                   }`}
                 >
-                  <div className="font-mono text-gray-500 flex items-center">
+                  <div className="font-mono text-gray-700 flex items-center">
                     {user.status === "AUTHENTICATING" ? (
                       <span className="text-blue-600 font-bold">▶ {index + 1}</span>
                     ) : (
@@ -89,7 +90,10 @@ export default function QueuePage() {
                     )}
                   </div>
                   <div className="flex items-center">
-                    <span className="text-gray-900">{user.wechatNickname}</span>
+                    <span className="text-gray-900 font-medium">{user.wechatNickname}</span>
+                  </div>
+                  <div className="flex items-center">
+                    <span className="text-gray-700 text-sm">{user.estimatedDate}</span>
                   </div>
                   <div className="flex items-center">
                     <span
@@ -105,7 +109,7 @@ export default function QueuePage() {
         )}
 
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>状态每30秒自动刷新</p>
+          <p>状态每30秒自动刷新 · 预计日期仅供参考</p>
           <p className="mt-1">如需报名请联系管理员获取报名链接</p>
         </div>
       </div>

@@ -17,16 +17,23 @@ export async function GET() {
       },
     });
 
-    // Desensitize nickname for public view
-    const publicUsers = users.map((u: { id: string; wechatNickname: string; position: number; status: string; failCount: number }) => ({
-      ...u,
-      wechatNickname:
-        u.wechatNickname.length > 2
-          ? u.wechatNickname[0] + "*".repeat(u.wechatNickname.length - 2) + u.wechatNickname[u.wechatNickname.length - 1]
-          : u.wechatNickname[0] + "*",
-    }));
+    // Calculate estimated date for each user
+    // Today + index (0-based) = estimated date
+    // AUTHENTICATING user is today, next is tomorrow, etc.
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    return NextResponse.json({ users: publicUsers });
+    const usersWithDate = users.map((u: { id: string; wechatNickname: string; position: number; status: string; failCount: number }, index: number) => {
+      const estimatedDate = new Date(today);
+      estimatedDate.setDate(estimatedDate.getDate() + index);
+      const dateStr = `${estimatedDate.getFullYear()}.${String(estimatedDate.getMonth() + 1).padStart(2, "0")}.${String(estimatedDate.getDate()).padStart(2, "0")}`;
+      return {
+        ...u,
+        estimatedDate: dateStr,
+      };
+    });
+
+    return NextResponse.json({ users: usersWithDate });
   } catch (error) {
     console.error("Failed to fetch queue:", error);
     return NextResponse.json({ error: "获取队列失败" }, { status: 500 });
