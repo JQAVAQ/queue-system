@@ -19,12 +19,16 @@ export async function GET() {
 
     // Calculate estimated date for each user using Beijing time (UTC+8)
     const now = new Date();
-    // Get Beijing date string directly
-    const bjDateStr = now.toLocaleDateString("sv-SE", { timeZone: "Asia/Shanghai" });
-    const todayMs = new Date(bjDateStr + "T00:00:00+08:00").getTime();
+    const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+    const bjMs = utcMs + 8 * 3600000;
+    const bj = new Date(bjMs);
+    const year = bj.getFullYear();
+    const month = bj.getMonth();
+    const day = bj.getDate();
+    const todayBjMs = new Date(year, month, day).getTime() - 8 * 3600000;
 
     const usersWithDate = users.map((u: { id: string; wechatNickname: string; position: number; status: string; failCount: number }, index: number) => {
-      const d = new Date(todayMs + index * 86400000);
+      const d = new Date(todayBjMs + (index + 1) * 86400000);
       const dateStr = `${d.getUTCFullYear()}.${String(d.getUTCMonth() + 1).padStart(2, "0")}.${String(d.getUTCDate()).padStart(2, "0")}`;
       return {
         ...u,
