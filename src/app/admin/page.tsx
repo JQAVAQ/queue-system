@@ -42,6 +42,7 @@ export default function AdminPage() {
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({ wechatId: "", wechatNickname: "", email: "" });
   const [showSuccessUsers, setShowSuccessUsers] = useState(false);
+  const [showTimeoutUsers, setShowTimeoutUsers] = useState(false);
 
   const checkSetup = useCallback(async () => {
     try {
@@ -307,8 +308,9 @@ export default function AdminPage() {
   }
 
   // Main admin dashboard
-  const waitingUsers = users.filter((u) => u.status !== "SUCCESS");
+  const waitingUsers = users.filter((u) => u.status !== "SUCCESS" && u.status !== "TIMEOUT");
   const successUsers = users.filter((u) => u.status === "SUCCESS");
+  const timeoutUsers = users.filter((u) => u.status === "TIMEOUT");
   const currentAuth = users.find((u) => u.status === "AUTHENTICATING");
 
   return (
@@ -319,7 +321,7 @@ export default function AdminPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">管理员后台</h1>
             <p className="text-gray-600">
-              当前排队 {waitingUsers.length} 人 · 已成功 {successUsers.length} 人
+              当前排队 {waitingUsers.length} 人 · 已成功 {successUsers.length} 人 · 已超时 {timeoutUsers.length} 人
             </p>
           </div>
           <div className="flex gap-2">
@@ -427,6 +429,12 @@ export default function AdminPage() {
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
             {showSuccessUsers ? "收起" : `✓ 已成功用户 (${successUsers.length})`}
+          </button>
+          <button
+            onClick={() => setShowTimeoutUsers(!showTimeoutUsers)}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            {showTimeoutUsers ? "收起" : `⏱ 已超时用户 (${timeoutUsers.length})`}
           </button>
         </div>
 
@@ -543,6 +551,35 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* Timeout users */}
+        {showTimeoutUsers && timeoutUsers.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <h3 className="font-medium text-gray-900 mb-3">已超时用户</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-gray-700">
+                    <th className="py-2 pr-4">序号</th>
+                    <th className="py-2 pr-4">微信号</th>
+                    <th className="py-2 pr-4">昵称</th>
+                    <th className="py-2 pr-4">邮箱</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timeoutUsers.map((u) => (
+                    <tr key={u.id} className="border-b last:border-b-0">
+                      <td className="py-2 pr-4 text-gray-700 font-medium">{u.position}</td>
+                      <td className="py-2 pr-4 text-gray-900 font-medium">{u.wechatId}</td>
+                      <td className="py-2 pr-4 text-gray-900 font-medium">{u.wechatNickname}</td>
+                      <td className="py-2 pr-4 text-gray-800">{u.email}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
         {/* Queue table */}
         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
@@ -579,7 +616,7 @@ export default function AdminPage() {
                           {statusInfo.label}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-center">{user.failCount}</td>
+                      <td className="px-4 py-3 text-center text-gray-900 font-medium">{user.failCount}</td>
                       <td className="px-4 py-3">
                         <div className="flex gap-1 flex-wrap">
                           {user.status === "WAITING" && !currentAuth && (

@@ -5,7 +5,7 @@ export async function GET() {
   try {
     const users = await prisma.user.findMany({
       where: {
-        status: { in: ["WAITING", "AUTHENTICATING", "FAILED", "TIMEOUT"] },
+        status: { in: ["WAITING", "AUTHENTICATING", "FAILED"] },
       },
       orderBy: { position: "asc" },
       select: {
