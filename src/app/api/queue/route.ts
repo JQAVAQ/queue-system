@@ -18,7 +18,7 @@ export async function GET() {
     });
 
     // Desensitize nickname for public view
-    const publicUsers = users.map((u) => ({
+    const publicUsers = users.map((u: { id: string; wechatNickname: string; position: number; status: string; failCount: number }) => ({
       ...u,
       wechatNickname:
         u.wechatNickname.length > 2
