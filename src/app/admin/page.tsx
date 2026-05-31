@@ -521,7 +521,7 @@ export default function AdminPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b text-left text-gray-600">
+                  <tr className="border-b text-left text-gray-700">
                     <th className="py-2 pr-4">序号</th>
                     <th className="py-2 pr-4">微信号</th>
                     <th className="py-2 pr-4">昵称</th>
@@ -531,10 +531,10 @@ export default function AdminPage() {
                 <tbody>
                   {successUsers.map((u) => (
                     <tr key={u.id} className="border-b last:border-b-0">
-                      <td className="py-2 pr-4">{u.position}</td>
-                      <td className="py-2 pr-4">{u.wechatId}</td>
-                      <td className="py-2 pr-4">{u.wechatNickname}</td>
-                      <td className="py-2 pr-4">{u.email}</td>
+                      <td className="py-2 pr-4 text-gray-700 font-medium">{u.position}</td>
+                      <td className="py-2 pr-4 text-gray-900 font-medium">{u.wechatId}</td>
+                      <td className="py-2 pr-4 text-gray-900 font-medium">{u.wechatNickname}</td>
+                      <td className="py-2 pr-4 text-gray-800">{u.email}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -549,13 +549,13 @@ export default function AdminPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b">
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">位置</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">微信号</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">昵称</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">邮箱</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">状态</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">失败次数</th>
-                  <th className="px-4 py-3 text-left font-medium text-gray-600">操作</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-800">位置</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-800">微信号</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-800">昵称</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-800">邮箱</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-800">状态</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-800">失败次数</th>
+                  <th className="px-4 py-3 text-left font-semibold text-gray-800">操作</th>
                 </tr>
               </thead>
               <tbody>
@@ -568,10 +568,10 @@ export default function AdminPage() {
                         user.status === "AUTHENTICATING" ? "bg-blue-50" : ""
                       }`}
                     >
-                      <td className="px-4 py-3 font-mono text-gray-500">{user.position}</td>
-                      <td className="px-4 py-3">{user.wechatId}</td>
-                      <td className="px-4 py-3">{user.wechatNickname}</td>
-                      <td className="px-4 py-3">{user.email}</td>
+                      <td className="px-4 py-3 font-mono text-gray-700 font-medium">{user.position}</td>
+                      <td className="px-4 py-3 text-gray-900 font-medium">{user.wechatId}</td>
+                      <td className="px-4 py-3 text-gray-900 font-medium">{user.wechatNickname}</td>
+                      <td className="px-4 py-3 text-gray-800">{user.email}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}

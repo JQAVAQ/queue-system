@@ -111,27 +111,38 @@ export async function PUT(req: NextRequest) {
       case "fail": {
         // Mark as FAILED, move back 5 positions
         const maxPos = await prisma.user.aggregate({ _max: { position: true } });
-        const newPos = Math.min(user.position + 5, (maxPos._max.position ?? 0) + 1);
+        const currentPos = user.position;
+        const targetPos = Math.min(currentPos + 5, (maxPos._max.position ?? 0) + 1);
 
-        // Shift other users forward to fill the gap
-        await prisma.user.updateMany({
-          where: {
-            position: { gt: user.position },
-            status: { in: ["WAITING", "FAILED", "TIMEOUT"] },
-          },
-          data: { position: { decrement: 1 } },
+        // Step 1: Temporarily move the user to a temp position to avoid unique constraint conflict
+        await prisma.user.update({
+          where: { id: userId },
+          data: { position: 99999 },
         });
 
+        // Step 2: Shift users between old and new position
+        if (targetPos > currentPos) {
+          // Move users between currentPos+1 and targetPos forward by 1
+          await prisma.user.updateMany({
+            where: {
+              position: { gt: currentPos, lte: targetPos },
+              id: { not: userId },
+            },
+            data: { position: { decrement: 1 } },
+          });
+        }
+
+        // Step 3: Place the failed user at target position
         await prisma.user.update({
           where: { id: userId },
           data: {
             status: "FAILED",
-            position: newPos,
+            position: targetPos,
             failCount: { increment: 1 },
           },
         });
 
-        // Promote next WAITING user
+        // Step 4: Promote next WAITING user
         const nextUser = await prisma.user.findFirst({
           where: { status: "WAITING" },
           orderBy: { position: "asc" },
