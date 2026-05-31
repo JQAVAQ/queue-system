@@ -1,0 +1,642 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+
+interface UserData {
+  id: string;
+  wechatId: string;
+  wechatNickname: string;
+  email: string;
+  position: number;
+  status: string;
+  failCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface TokenData {
+  id: string;
+  value: string;
+  active: boolean;
+  createdAt: string;
+}
+
+const STATUS_MAP: Record<string, { label: string; color: string }> = {
+  WAITING: { label: "未认证", color: "bg-yellow-100 text-yellow-800" },
+  AUTHENTICATING: { label: "正在认证", color: "bg-blue-100 text-blue-800" },
+  SUCCESS: { label: "已成功", color: "bg-green-100 text-green-800" },
+  FAILED: { label: "认证失败", color: "bg-red-100 text-red-800" },
+  TIMEOUT: { label: "已超时", color: "bg-gray-100 text-gray-800" },
+};
+
+export default function AdminPage() {
+  const [password, setPassword] = useState("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isSetup, setIsSetup] = useState<boolean | null>(null);
+  const [setupPassword, setSetupPassword] = useState("");
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [tokens, setTokens] = useState<TokenData[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState({ type: "", text: "" });
+  const [showTokenSection, setShowTokenSection] = useState(false);
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newUser, setNewUser] = useState({ wechatId: "", wechatNickname: "", email: "" });
+  const [showSuccessUsers, setShowSuccessUsers] = useState(false);
+
+  const checkSetup = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/setup");
+      const data = await res.json();
+      setIsSetup(data.isSetup);
+    } catch {
+      setMessage({ type: "error", text: "检查设置状态失败" });
+    }
+  }, []);
+
+  useEffect(() => {
+    checkSetup();
+  }, [checkSetup]);
+
+  async function handleSetup(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: setupPassword }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setMessage({ type: "error", text: data.error });
+      } else {
+        setMessage({ type: "success", text: "管理员密码设置成功！" });
+        setIsSetup(true);
+      }
+    } catch {
+      setMessage({ type: "error", text: "设置失败" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin", {
+        headers: { "x-admin-password": password },
+      });
+      const data = await res.json();
+      if (data.error) {
+        setMessage({ type: "error", text: data.error });
+      } else {
+        setUsers(data.users);
+        setTokens(data.tokens);
+        setIsLoggedIn(true);
+        setMessage({ type: "", text: "" });
+      }
+    } catch {
+      setMessage({ type: "error", text: "登录失败" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function refreshData() {
+    try {
+      const res = await fetch("/api/admin", {
+        headers: { "x-admin-password": password },
+      });
+      const data = await res.json();
+      if (!data.error) {
+        setUsers(data.users);
+        setTokens(data.tokens);
+      }
+    } catch {
+      // silent
+    }
+  }
+
+  async function handleAction(userId: string, action: string) {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": password,
+        },
+        body: JSON.stringify({ action, userId }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setMessage({ type: "error", text: data.error });
+      } else {
+        setMessage({ type: "success", text: "操作成功" });
+        await refreshData();
+      }
+    } catch {
+      setMessage({ type: "error", text: "操作失败" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGenerateToken() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/token", {
+        method: "POST",
+        headers: { "x-admin-password": password },
+      });
+      const data = await res.json();
+      if (data.error) {
+        setMessage({ type: "error", text: data.error });
+      } else {
+        setMessage({ type: "success", text: "新报名链接已生成" });
+        await refreshData();
+      }
+    } catch {
+      setMessage({ type: "error", text: "生成失败" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDeactivateToken(tokenId: string) {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/token", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": password,
+        },
+        body: JSON.stringify({ tokenId }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setMessage({ type: "error", text: data.error });
+      } else {
+        setMessage({ type: "success", text: "链接已失效" });
+        await refreshData();
+      }
+    } catch {
+      setMessage({ type: "error", text: "操作失败" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAddUser(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const maxPos = users.length > 0 ? Math.max(...users.map((u) => u.position)) : 0;
+      const res = await fetch("/api/admin", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": password,
+        },
+        body: JSON.stringify({
+          action: "addUser",
+          ...newUser,
+          position: maxPos + 1,
+        }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setMessage({ type: "error", text: data.error });
+      } else {
+        setMessage({ type: "success", text: "用户添加成功" });
+        setNewUser({ wechatId: "", wechatNickname: "", email: "" });
+        setShowAddUser(false);
+        await refreshData();
+      }
+    } catch {
+      setMessage({ type: "error", text: "添加失败" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Setup page
+  if (isSetup === false) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-sm p-8 max-w-md w-full mx-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">初始化设置</h1>
+          <p className="text-gray-600 text-center mb-6">首次使用，请设置管理员密码</p>
+
+          {message.text && (
+            <div
+              className={`p-3 rounded-lg text-sm mb-4 ${
+                message.type === "error"
+                  ? "bg-red-50 text-red-700 border border-red-200"
+                  : "bg-green-50 text-green-700 border border-green-200"
+              }`}
+            >
+              {message.text}
+            </div>
+          )}
+
+          <form onSubmit={handleSetup} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">管理员密码</label>
+              <input
+                type="password"
+                value={setupPassword}
+                onChange={(e) => setSetupPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                placeholder="至少6位"
+                minLength={6}
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {loading ? "设置中..." : "设置密码"}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Login page
+  if (!isLoggedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center">
+        <div className="bg-white rounded-lg shadow-sm p-8 max-w-md w-full mx-4">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2 text-center">管理员登录</h1>
+          <p className="text-gray-600 text-center mb-6">请输入管理员密码</p>
+
+          {message.text && (
+            <div className="p-3 rounded-lg text-sm mb-4 bg-red-50 text-red-700 border border-red-200">
+              {message.text}
+            </div>
+          )}
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                placeholder="请输入密码"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {loading ? "登录中..." : "登录"}
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // Main admin dashboard
+  const waitingUsers = users.filter((u) => u.status !== "SUCCESS");
+  const successUsers = users.filter((u) => u.status === "SUCCESS");
+  const currentAuth = users.find((u) => u.status === "AUTHENTICATING");
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-6xl mx-auto px-4 py-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">管理员后台</h1>
+            <p className="text-gray-600">
+              当前排队 {waitingUsers.length} 人 · 已成功 {successUsers.length} 人
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={refreshData}
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              刷新
+            </button>
+            <a
+              href="/"
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              公开页面
+            </a>
+            <button
+              onClick={() => {
+                setIsLoggedIn(false);
+                setPassword("");
+              }}
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              退出
+            </button>
+          </div>
+        </div>
+
+        {/* Message */}
+        {message.text && (
+          <div
+            className={`p-3 rounded-lg text-sm mb-4 ${
+              message.type === "error"
+                ? "bg-red-50 text-red-700 border border-red-200"
+                : "bg-green-50 text-green-700 border border-green-200"
+            }`}
+          >
+            {message.text}
+          </div>
+        )}
+
+        {/* Current authentication */}
+        {currentAuth && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium text-blue-800">当前正在认证：</span>
+                <span className="ml-2 font-bold text-blue-900">{currentAuth.wechatNickname}</span>
+                <span className="ml-2 text-sm text-blue-700">（微信号：{currentAuth.wechatId}）</span>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => handleAction(currentAuth.id, "success")}
+                  disabled={loading}
+                  className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+                >
+                  ✓ 认证成功
+                </button>
+                <button
+                  onClick={() => handleAction(currentAuth.id, "fail")}
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 transition-colors disabled:opacity-50"
+                >
+                  ✗ 认证失败
+                </button>
+                <button
+                  onClick={() => handleAction(currentAuth.id, "skip")}
+                  disabled={loading}
+                  className="px-4 py-2 bg-gray-600 text-white rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors disabled:opacity-50"
+                >
+                  ⏭ 跳过
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Action buttons */}
+        <div className="flex gap-3 mb-6 flex-wrap">
+          {!currentAuth && waitingUsers.filter((u) => u.status === "WAITING").length > 0 && (
+            <button
+              onClick={() => {
+                const first = waitingUsers.filter((u) => u.status === "WAITING")[0];
+                if (first) handleAction(first.id, "startAuth");
+              }}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              ▶ 开始认证第一位
+            </button>
+          )}
+          <button
+            onClick={() => setShowAddUser(!showAddUser)}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            {showAddUser ? "取消" : "+ 手动添加用户"}
+          </button>
+          <button
+            onClick={() => setShowTokenSection(!showTokenSection)}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            {showTokenSection ? "收起" : "🔗 报名链接管理"}
+          </button>
+          <button
+            onClick={() => setShowSuccessUsers(!showSuccessUsers)}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            {showSuccessUsers ? "收起" : `✓ 已成功用户 (${successUsers.length})`}
+          </button>
+        </div>
+
+        {/* Add user form */}
+        {showAddUser && (
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <h3 className="font-medium text-gray-900 mb-3">手动添加用户</h3>
+            <form onSubmit={handleAddUser} className="flex gap-3 flex-wrap items-end">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">微信号</label>
+                <input
+                  type="text"
+                  value={newUser.wechatId}
+                  onChange={(e) => setNewUser({ ...newUser, wechatId: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">微信昵称</label>
+                <input
+                  type="text"
+                  value={newUser.wechatNickname}
+                  onChange={(e) => setNewUser({ ...newUser, wechatNickname: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">邮箱</label>
+                <input
+                  type="email"
+                  value={newUser.email}
+                  onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                添加
+              </button>
+            </form>
+          </div>
+        )}
+
+        {/* Token management */}
+        {showTokenSection && (
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-medium text-gray-900">报名链接管理</h3>
+              <button
+                onClick={handleGenerateToken}
+                disabled={loading}
+                className="px-3 py-1.5 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                生成新链接
+              </button>
+            </div>
+            {tokens.length === 0 ? (
+              <p className="text-gray-500 text-sm">暂无有效报名链接</p>
+            ) : (
+              <div className="space-y-2">
+                {tokens.map((t) => (
+                  <div key={t.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs text-gray-500">报名链接：</span>
+                      <span className="text-sm font-mono text-gray-700 break-all">
+                        {typeof window !== "undefined" ? `${window.location.origin}/register?token=${t.value}` : `/register?token=${t.value}`}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => handleDeactivateToken(t.id)}
+                      className="ml-3 px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors flex-shrink-0"
+                    >
+                      失效
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Success users */}
+        {showSuccessUsers && successUsers.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <h3 className="font-medium text-gray-900 mb-3">已成功用户</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-gray-600">
+                    <th className="py-2 pr-4">序号</th>
+                    <th className="py-2 pr-4">微信号</th>
+                    <th className="py-2 pr-4">昵称</th>
+                    <th className="py-2 pr-4">邮箱</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {successUsers.map((u) => (
+                    <tr key={u.id} className="border-b last:border-b-0">
+                      <td className="py-2 pr-4">{u.position}</td>
+                      <td className="py-2 pr-4">{u.wechatId}</td>
+                      <td className="py-2 pr-4">{u.wechatNickname}</td>
+                      <td className="py-2 pr-4">{u.email}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Queue table */}
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 border-b">
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">位置</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">微信号</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">昵称</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">邮箱</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">状态</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">失败次数</th>
+                  <th className="px-4 py-3 text-left font-medium text-gray-600">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {waitingUsers.map((user) => {
+                  const statusInfo = STATUS_MAP[user.status] || STATUS_MAP.WAITING;
+                  return (
+                    <tr
+                      key={user.id}
+                      className={`border-b last:border-b-0 hover:bg-gray-50 transition-colors ${
+                        user.status === "AUTHENTICATING" ? "bg-blue-50" : ""
+                      }`}
+                    >
+                      <td className="px-4 py-3 font-mono text-gray-500">{user.position}</td>
+                      <td className="px-4 py-3">{user.wechatId}</td>
+                      <td className="px-4 py-3">{user.wechatNickname}</td>
+                      <td className="px-4 py-3">{user.email}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusInfo.color}`}
+                        >
+                          {statusInfo.label}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">{user.failCount}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-1 flex-wrap">
+                          {user.status === "WAITING" && !currentAuth && (
+                            <button
+                              onClick={() => handleAction(user.id, "startAuth")}
+                              className="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            >
+                              开始认证
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              const newPos = prompt("输入新位置：", String(user.position));
+                              if (newPos && !isNaN(Number(newPos))) {
+                                fetch("/api/admin", {
+                                  method: "PUT",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                    "x-admin-password": password,
+                                  },
+                                  body: JSON.stringify({
+                                    action: "reorder",
+                                    userId: user.id,
+                                    newPosition: Number(newPos),
+                                  }),
+                                }).then(() => refreshData());
+                              }
+                            }}
+                            className="px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                          >
+                            调序
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`确定删除 ${user.wechatNickname} 吗？`)) {
+                                handleAction(user.id, "delete");
+                              }
+                            }}
+                            className="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded transition-colors"
+                          >
+                            删除
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 text-center text-sm text-gray-500">
+          <p>数据每30秒自动刷新 · 管理员可随时调整队列顺序</p>
+        </div>
+      </div>
+    </div>
+  );
+}

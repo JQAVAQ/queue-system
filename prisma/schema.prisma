@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id                String   @id @default(cuid())
+  wechatId          String   @unique
+  wechatNickname    String
+  email             String
+  position          Int      @unique
+  status            String   @default("WAITING") // WAITING | AUTHENTICATING | SUCCESS | FAILED | TIMEOUT
+  failCount         Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Token {
+  id        String   @id @default(cuid())
+  value     String   @unique
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("tokens")
+}
+
+model AdminConfig {
+  id    String @id @default("admin")
+  value String // JSON string storing config like passwordHash
+}
