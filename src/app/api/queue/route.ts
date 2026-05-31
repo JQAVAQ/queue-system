@@ -20,13 +20,13 @@ export async function GET() {
     // Calculate estimated date for each user
     // Today + index (0-based) = estimated date
     // AUTHENTICATING user is today, next is tomorrow, etc.
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const todayMs = new Date(todayStr + "T00:00:00").getTime();
 
     const usersWithDate = users.map((u: { id: string; wechatNickname: string; position: number; status: string; failCount: number }, index: number) => {
-      const estimatedDate = new Date(today);
-      estimatedDate.setDate(estimatedDate.getDate() + index);
-      const dateStr = `${estimatedDate.getFullYear()}.${String(estimatedDate.getMonth() + 1).padStart(2, "0")}.${String(estimatedDate.getDate()).padStart(2, "0")}`;
+      const d = new Date(todayMs + index * 86400000);
+      const dateStr = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, "0")}.${String(d.getDate()).padStart(2, "0")}`;
       return {
         ...u,
         estimatedDate: dateStr,
