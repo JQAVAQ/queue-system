@@ -21,12 +21,28 @@ export default function QueuePage() {
   const [users, setUsers] = useState<QueueUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [announcement, setAnnouncement] = useState<{ content: string; enabled: boolean }>({ content: "", enabled: false });
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
 
   useEffect(() => {
     fetchQueue();
+    fetchAnnouncement();
     const interval = setInterval(fetchQueue, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  async function fetchAnnouncement() {
+    try {
+      const res = await fetch("/api/announcement");
+      const data = await res.json();
+      setAnnouncement(data);
+      if (data.enabled && data.content) {
+        setShowAnnouncement(true);
+      }
+    } catch {
+      // silent
+    }
+  }
 
   async function fetchQueue() {
     try {
@@ -46,10 +62,44 @@ export default function QueuePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
+      {/* Announcement Modal */}
+      {showAnnouncement && announcement.enabled && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setShowAnnouncement(false)}>
+          <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-blue-600 px-6 py-4">
+              <h2 className="text-white text-lg font-bold flex items-center gap-2">
+                📢 公告
+              </h2>
+            </div>
+            <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
+              <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
+                {announcement.content}
+              </div>
+            </div>
+            <div className="px-6 py-4 bg-gray-50 flex justify-end">
+              <button
+                onClick={() => setShowAnnouncement(false)}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+              >
+                我知道了
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-2xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">邀请码排队系统</h1>
           <p className="text-gray-600">当前排队人数：{users.length} 人</p>
+          {announcement.enabled && (
+            <button
+              onClick={() => setShowAnnouncement(true)}
+              className="mt-2 text-blue-600 hover:text-blue-700 text-sm underline"
+            >
+              📢 查看公告
+            </button>
+          )}
         </div>
 
         {loading ? (

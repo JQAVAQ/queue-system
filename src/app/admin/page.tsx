@@ -43,6 +43,9 @@ export default function AdminPage() {
   const [newUser, setNewUser] = useState({ wechatId: "", wechatNickname: "", email: "" });
   const [showSuccessUsers, setShowSuccessUsers] = useState(false);
   const [showTimeoutUsers, setShowTimeoutUsers] = useState(false);
+  const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [announcementContent, setAnnouncementContent] = useState("");
+  const [announcementEnabled, setAnnouncementEnabled] = useState(false);
 
   const checkSetup = useCallback(async () => {
     try {
@@ -96,6 +99,7 @@ export default function AdminPage() {
         setTokens(data.tokens);
         setIsLoggedIn(true);
         setMessage({ type: "", text: "" });
+        fetchAnnouncement();
       }
     } catch {
       setMessage({ type: "error", text: "登录失败" });
@@ -116,6 +120,42 @@ export default function AdminPage() {
       }
     } catch {
       // silent
+    }
+  }
+
+  async function fetchAnnouncement() {
+    try {
+      const res = await fetch("/api/announcement");
+      const data = await res.json();
+      setAnnouncementContent(data.content || "");
+      setAnnouncementEnabled(data.enabled || false);
+    } catch {
+      // silent
+    }
+  }
+
+  async function handleSaveAnnouncement() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/announcement", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": password,
+        },
+        body: JSON.stringify({ content: announcementContent }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setMessage({ type: "error", text: data.error });
+      } else {
+        setMessage({ type: "success", text: "公告已保存" });
+        setAnnouncementEnabled(announcementContent.length > 0);
+      }
+    } catch {
+      setMessage({ type: "error", text: "保存失败" });
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -436,6 +476,15 @@ export default function AdminPage() {
           >
             {showTimeoutUsers ? "收起" : `⏱ 已超时用户 (${timeoutUsers.length})`}
           </button>
+          <button
+            onClick={() => {
+              setShowAnnouncement(!showAnnouncement);
+              if (!showAnnouncement) fetchAnnouncement();
+            }}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            {showAnnouncement ? "收起" : `📢 公告管理 ${announcementEnabled ? "✓" : ""}`}
+          </button>
         </div>
 
         {/* Add user form */}
@@ -576,6 +625,35 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Announcement editor */}
+        {showAnnouncement && (
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <h3 className="font-medium text-gray-900 mb-3">📢 公告管理</h3>
+            <p className="text-sm text-gray-600 mb-3">
+              公告内容会在用户打开排队页面时自动弹出。留空则不显示公告。
+            </p>
+            <textarea
+              value={announcementContent}
+              onChange={(e) => setAnnouncementContent(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 placeholder-gray-500 resize-y"
+              rows={6}
+              placeholder="输入公告内容..."
+            />
+            <div className="mt-3 flex items-center justify-between">
+              <span className="text-sm text-gray-500">
+                {announcementEnabled ? "✅ 公告已启用" : "⚪ 公告未启用（内容为空）"}
+              </span>
+              <button
+                onClick={handleSaveAnnouncement}
+                disabled={loading}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors disabled:opacity-50"
+              >
+                {loading ? "保存中..." : "保存公告"}
+              </button>
             </div>
           </div>
         )}
