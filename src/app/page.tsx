@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Markdown from "react-markdown";
 
 interface QueueUser {
   id: string;
@@ -44,22 +45,6 @@ export default function QueuePage() {
     }
   }
 
-  function renderContent(text: string) {
-    // Auto-detect URLs and make them clickable
-    const urlRegex = /(https?:\/\/[^\s<]+)/g;
-    const parts = text.split(urlRegex);
-    return parts.map((part, i) => {
-      if (part.match(urlRegex)) {
-        return (
-          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 underline break-all">
-            {part}
-          </a>
-        );
-      }
-      return <span key={i}>{part}</span>;
-    });
-  }
-
   async function fetchQueue() {
     try {
       const res = await fetch("/api/queue");
@@ -88,8 +73,8 @@ export default function QueuePage() {
               </h2>
             </div>
             <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
-              <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
-                {renderContent(announcement.content)}
+              <div className="text-gray-800 text-sm leading-relaxed prose prose-sm max-w-none">
+                <Markdown>{announcement.content}</Markdown>
               </div>
             </div>
             <div className="px-6 py-4 bg-gray-50 flex justify-end">
