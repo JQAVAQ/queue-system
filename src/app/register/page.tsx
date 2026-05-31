@@ -107,7 +107,7 @@ function RegisterForm() {
               type="text"
               value={form.wechatId}
               onChange={(e) => setForm({ ...form, wechatId: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 placeholder-gray-500"
               placeholder="请输入您的微信号（非昵称）"
               required
             />
@@ -122,7 +122,7 @@ function RegisterForm() {
               type="text"
               value={form.wechatNickname}
               onChange={(e) => setForm({ ...form, wechatNickname: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 placeholder-gray-500"
               placeholder="请输入您的微信昵称"
               required
             />
@@ -136,7 +136,7 @@ function RegisterForm() {
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 placeholder-gray-500"
               placeholder="请输入您的邮箱"
               required
             />

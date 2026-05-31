@@ -249,7 +249,7 @@ export default function AdminPage() {
                 type="password"
                 value={setupPassword}
                 onChange={(e) => setSetupPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 placeholder-gray-500"
                 placeholder="至少6位"
                 minLength={6}
                 required
@@ -288,7 +288,7 @@ export default function AdminPage() {
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900 placeholder-gray-500"
                 placeholder="请输入密码"
                 required
               />
@@ -436,32 +436,32 @@ export default function AdminPage() {
             <h3 className="font-medium text-gray-900 mb-3">手动添加用户</h3>
             <form onSubmit={handleAddUser} className="flex gap-3 flex-wrap items-end">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">微信号</label>
+                <label className="block text-xs text-gray-700 mb-1">微信号</label>
                 <input
                   type="text"
                   value={newUser.wechatId}
                   onChange={(e) => setNewUser({ ...newUser, wechatId: e.target.value })}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">微信昵称</label>
+                <label className="block text-xs text-gray-700 mb-1">微信昵称</label>
                 <input
                   type="text"
                   value={newUser.wechatNickname}
                   onChange={(e) => setNewUser({ ...newUser, wechatNickname: e.target.value })}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">邮箱</label>
+                <label className="block text-xs text-gray-700 mb-1">邮箱</label>
                 <input
                   type="email"
                   value={newUser.email}
                   onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-gray-900"
                   required
                 />
               </div>
