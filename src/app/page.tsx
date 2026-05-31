@@ -44,6 +44,22 @@ export default function QueuePage() {
     }
   }
 
+  function renderContent(text: string) {
+    // Auto-detect URLs and make them clickable
+    const urlRegex = /(https?:\/\/[^\s<]+)/g;
+    const parts = text.split(urlRegex);
+    return parts.map((part, i) => {
+      if (part.match(urlRegex)) {
+        return (
+          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-700 underline break-all">
+            {part}
+          </a>
+        );
+      }
+      return <span key={i}>{part}</span>;
+    });
+  }
+
   async function fetchQueue() {
     try {
       const res = await fetch("/api/queue");
@@ -73,7 +89,7 @@ export default function QueuePage() {
             </div>
             <div className="px-6 py-5 max-h-[60vh] overflow-y-auto">
               <div className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">
-                {announcement.content}
+                {renderContent(announcement.content)}
               </div>
             </div>
             <div className="px-6 py-4 bg-gray-50 flex justify-end">
