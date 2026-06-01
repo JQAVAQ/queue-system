@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
     if (!response.ok) {
       const err = await response.text();
       console.error("Gist API error:", err);
-      return NextResponse.json({ error: "Gist 备份失败" }, { status: 500 });
+      return NextResponse.json({ error: `Gist 备份失败 (${response.status})` }, { status: 500 });
     }
 
     const result = await response.json();
