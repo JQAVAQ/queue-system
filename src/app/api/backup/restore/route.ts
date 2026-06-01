@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-// POST: Restore from JSON backup
+// POST: Restore from JSON (file upload or Gist)
 export async function POST(req: NextRequest) {
   try {
     const password = req.headers.get("x-admin-password");
@@ -16,7 +16,38 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { users, tokens } = body;
+    let restoreData = body;
+
+    // If source is "gist", fetch from GitHub Gist
+    if (body.source === "gist") {
+      const githubToken = process.env.GITHUB_TOKEN;
+      if (!githubToken) {
+        return NextResponse.json({ error: "GITHUB_TOKEN not configured" }, { status: 500 });
+      }
+
+      const gistConfig = await prisma.adminConfig.findUnique({ where: { id: "gist_id" } });
+      if (!gistConfig) {
+        return NextResponse.json({ error: "没有找到 Gist 备份" }, { status: 404 });
+      }
+
+      const response = await fetch(`https://api.github.com/gists/${gistConfig.value}`, {
+        headers: { Authorization: `Bearer ${githubToken}` },
+      });
+
+      if (!response.ok) {
+        return NextResponse.json({ error: "获取 Gist 失败" }, { status: 500 });
+      }
+
+      const gist = await response.json();
+      const fileContent = gist.files["queue-backup.json"]?.content;
+      if (!fileContent) {
+        return NextResponse.json({ error: "Gist 中没有备份数据" }, { status: 404 });
+      }
+
+      restoreData = JSON.parse(fileContent);
+    }
+
+    const { users, tokens } = restoreData;
 
     if (!users || !Array.isArray(users)) {
       return NextResponse.json({ error: "无效的备份数据" }, { status: 400 });
@@ -64,21 +95,15 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET: Get stored backup info
+// GET: Get backup status
 export async function GET() {
   try {
-    const backup = await prisma.adminConfig.findUnique({ where: { id: "backup" } });
-    if (!backup) {
-      return NextResponse.json({ exists: false });
-    }
-
-    const data = JSON.parse(backup.value);
+    const gistConfig = await prisma.adminConfig.findUnique({ where: { id: "gist_id" } });
     return NextResponse.json({
-      exists: true,
-      timestamp: data.timestamp,
-      userCount: data.users?.length || 0,
+      hasGist: !!gistConfig,
+      gistId: gistConfig?.value || null,
     });
   } catch (error) {
-    return NextResponse.json({ exists: false });
+    return NextResponse.json({ hasGist: false });
   }
 }

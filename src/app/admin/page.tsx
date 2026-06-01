@@ -327,6 +327,53 @@ export default function AdminPage() {
     }
   }
 
+  async function handleGistBackup() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/backup", {
+        method: "POST",
+        headers: { "x-admin-password": password },
+      });
+      const data = await res.json();
+      if (data.error) {
+        setMessage({ type: "error", text: data.error });
+      } else {
+        setMessage({ type: "success", text: "已备份到 GitHub Gist" });
+      }
+    } catch {
+      setMessage({ type: "error", text: "Gist 备份失败" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGistRestore() {
+    if (!confirm("从 Gist 恢复将覆盖当前所有数据，确定继续吗？")) return;
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/backup/restore", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": password,
+        },
+        body: JSON.stringify({ source: "gist" }),
+      });
+      const data = await res.json();
+      if (data.error) {
+        setMessage({ type: "error", text: data.error });
+      } else {
+        setMessage({ type: "success", text: `从 Gist 恢复成功：${data.restored.users} 个用户` });
+        await refreshData();
+      }
+    } catch {
+      setMessage({ type: "error", text: "Gist 恢复失败" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
   // Setup page
   if (isSetup === false) {
     return (
@@ -553,10 +600,10 @@ export default function AdminPage() {
             onClick={handleExportBackup}
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            💾 导出备份
+            💾 下载JSON
           </button>
           <label className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer">
-            📂 导入备份
+            📂 导入JSON
             <input
               type="file"
               accept=".json"
@@ -564,6 +611,20 @@ export default function AdminPage() {
               className="hidden"
             />
           </label>
+          <button
+            onClick={handleGistBackup}
+            disabled={loading}
+            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+          >
+            ☁️ 备份到Gist
+          </button>
+          <button
+            onClick={handleGistRestore}
+            disabled={loading}
+            className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors disabled:opacity-50"
+          >
+            🔄 从Gist恢复
+          </button>
         </div>
 
         {/* Add user form */}
