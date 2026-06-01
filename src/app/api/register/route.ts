@@ -7,8 +7,8 @@ export async function POST(req: NextRequest) {
     const { wechatId, wechatNickname, email, token } = body;
 
     // Validate required fields
-    if (!wechatId || !wechatNickname || !email || !token) {
-      return NextResponse.json({ error: "所有字段都是必填的" }, { status: 400 });
+    if (!wechatId || !wechatNickname || !token) {
+      return NextResponse.json({ error: "微信号、昵称和报名链接都是必填的" }, { status: 400 });
     }
 
     // Validate token
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
           where: { id: existing.id },
           data: {
             wechatId: wechatId,
-            email: email,
+            email: email || "",
           },
         });
       } else {

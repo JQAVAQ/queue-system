@@ -130,15 +130,14 @@ function RegisterForm() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              邮箱 <span className="text-red-500">*</span>
+              邮箱 <span className="text-gray-400">（选填）</span>
             </label>
             <input
               type="email"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-gray-900 placeholder-gray-500"
-              placeholder="请输入您的邮箱"
-              required
+              placeholder="请输入您的邮箱（选填）"
             />
           </div>
 
