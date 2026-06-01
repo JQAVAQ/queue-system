@@ -11,6 +11,7 @@ export async function GET() {
       select: {
         id: true,
         wechatNickname: true,
+        email: true,
         position: true,
         status: true,
         failCount: true,
@@ -27,7 +28,7 @@ export async function GET() {
     const day = bj.getDate();
     const todayBjMs = new Date(year, month, day).getTime() - 8 * 3600000;
 
-    const usersWithDate = users.map((u: { id: string; wechatNickname: string; position: number; status: string; failCount: number }, index: number) => {
+    const usersWithDate = users.map((u: { id: string; wechatNickname: string; email: string; position: number; status: string; failCount: number }, index: number) => {
       const d = new Date(todayBjMs + (index + 1) * 86400000);
       const dateStr = `${d.getUTCFullYear()}.${String(d.getUTCMonth() + 1).padStart(2, "0")}.${String(d.getUTCDate()).padStart(2, "0")}`;
       return {

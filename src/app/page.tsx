@@ -6,6 +6,7 @@ import Markdown from "react-markdown";
 interface QueueUser {
   id: string;
   wechatNickname: string;
+  email: string;
   position: number;
   status: string;
   failCount: number;
@@ -24,6 +25,7 @@ export default function QueuePage() {
   const [error, setError] = useState("");
   const [announcement, setAnnouncement] = useState<{ content: string; enabled: boolean }>({ content: "", enabled: false });
   const [showAnnouncement, setShowAnnouncement] = useState(false);
+  const [revealedEmails, setRevealedEmails] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     fetchQueue();
@@ -61,6 +63,18 @@ export default function QueuePage() {
     }
   }
 
+  function toggleEmail(userId: string) {
+    setRevealedEmails((prev) => {
+      const next = new Set(prev);
+      if (next.has(userId)) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
+      return next;
+    });
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       {/* Announcement Modal */}
@@ -89,7 +103,7 @@ export default function QueuePage() {
         </div>
       )}
 
-      <div className="max-w-2xl mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto px-4 py-8">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">邀请码排队系统</h1>
           <p className="text-gray-600">当前排队人数：{users.length} 人</p>
@@ -118,18 +132,20 @@ export default function QueuePage() {
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="grid grid-cols-[60px_1fr_1fr_120px] gap-4 px-4 py-3 bg-gray-50 border-b font-medium text-sm text-gray-700">
+            <div className="grid grid-cols-[50px_1fr_1fr_1.2fr_100px] gap-3 px-4 py-3 bg-gray-50 border-b font-medium text-sm text-gray-700">
               <div>序号</div>
               <div>昵称</div>
+              <div>邮箱</div>
               <div>预计认证日期</div>
               <div>状态</div>
             </div>
             {users.map((user, index) => {
               const statusInfo = STATUS_MAP[user.status] || STATUS_MAP.WAITING;
+              const isRevealed = revealedEmails.has(user.id);
               return (
                 <div
                   key={user.id}
-                  className={`grid grid-cols-[60px_1fr_1fr_120px] gap-4 px-4 py-3 border-b last:border-b-0 hover:bg-gray-50 transition-colors ${
+                  className={`grid grid-cols-[50px_1fr_1fr_1.2fr_100px] gap-3 px-4 py-3 border-b last:border-b-0 hover:bg-gray-50 transition-colors ${
                     user.status === "AUTHENTICATING" ? "bg-blue-50" : ""
                   }`}
                 >
@@ -142,6 +158,24 @@ export default function QueuePage() {
                   </div>
                   <div className="flex items-center">
                     <span className="text-gray-900 font-medium">{user.wechatNickname}</span>
+                  </div>
+                  <div className="flex items-center">
+                    {user.email ? (
+                      <button
+                        onClick={() => toggleEmail(user.id)}
+                        className="text-left cursor-pointer group"
+                      >
+                        {isRevealed ? (
+                          <span className="text-gray-900 text-sm">{user.email}</span>
+                        ) : (
+                          <span className="text-gray-400 text-sm blur-[4px] select-none group-hover:text-gray-500 transition-colors">
+                            {user.email}
+                          </span>
+                        )}
+                      </button>
+                    ) : (
+                      <span className="text-gray-300 text-sm italic">未填写</span>
+                    )}
                   </div>
                   <div className="flex items-center">
                     <span className="text-gray-700 text-sm">{user.estimatedDate}</span>
@@ -160,7 +194,7 @@ export default function QueuePage() {
         )}
 
         <div className="mt-6 text-center text-sm text-gray-500">
-          <p>状态每30秒自动刷新 · 预计日期仅供参考</p>
+          <p>状态每30秒自动刷新 · 预计日期仅供参考 · 点击邮箱可查看</p>
           <p className="mt-1">如需报名请联系管理员获取报名链接</p>
         </div>
       </div>
