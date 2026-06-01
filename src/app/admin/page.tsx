@@ -263,6 +263,70 @@ export default function AdminPage() {
     }
   }
 
+  async function handleExportBackup() {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/backup", {
+        headers: { "x-admin-password": password },
+      });
+      const data = await res.json();
+      if (data.error) {
+        setMessage({ type: "error", text: data.error });
+        return;
+      }
+      // Download as JSON file
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `queue-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setMessage({ type: "success", text: "备份已下载" });
+    } catch {
+      setMessage({ type: "error", text: "导出失败" });
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleImportBackup(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!confirm("导入将覆盖当前所有数据，确定继续吗？")) {
+      e.target.value = "";
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      const res = await fetch("/api/backup/restore", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": password,
+        },
+        body: JSON.stringify(data),
+      });
+      const result = await res.json();
+      if (result.error) {
+        setMessage({ type: "error", text: result.error });
+      } else {
+        setMessage({ type: "success", text: `导入成功：${result.restored.users} 个用户，${result.restored.tokens} 个链接` });
+        await refreshData();
+      }
+    } catch {
+      setMessage({ type: "error", text: "导入失败，请检查文件格式" });
+    } finally {
+      setLoading(false);
+      e.target.value = "";
+    }
+  }
+
   // Setup page
   if (isSetup === false) {
     return (
@@ -485,6 +549,21 @@ export default function AdminPage() {
           >
             {showAnnouncement ? "收起" : `📢 公告管理 ${announcementEnabled ? "✓" : ""}`}
           </button>
+          <button
+            onClick={handleExportBackup}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            💾 导出备份
+          </button>
+          <label className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer">
+            📂 导入备份
+            <input
+              type="file"
+              accept=".json"
+              onChange={handleImportBackup}
+              className="hidden"
+            />
+          </label>
         </div>
 
         {/* Add user form */}
