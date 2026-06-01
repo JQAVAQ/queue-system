@@ -475,7 +475,7 @@ export default function AdminPage() {
               当前排队 {waitingUsers.length} 人 · 已成功 {successUsers.length} 人 · 已超时 {timeoutUsers.length} 人
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap justify-end">
             <button
               onClick={refreshData}
               className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
@@ -488,6 +488,35 @@ export default function AdminPage() {
             >
               公开页面
             </a>
+            <button
+              onClick={handleExportBackup}
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+            >
+              💾 下载JSON
+            </button>
+            <label className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer">
+              📂 导入JSON
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImportBackup}
+                className="hidden"
+              />
+            </label>
+            <button
+              onClick={handleGistBackup}
+              disabled={loading}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
+            >
+              ☁️ 备份到Gist
+            </button>
+            <button
+              onClick={handleGistRestore}
+              disabled={loading}
+              className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors disabled:opacity-50"
+            >
+              🔄 从Gist恢复
+            </button>
             <button
               onClick={() => {
                 setIsLoggedIn(false);
@@ -595,35 +624,6 @@ export default function AdminPage() {
             className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
             {showAnnouncement ? "收起" : `📢 公告管理 ${announcementEnabled ? "✓" : ""}`}
-          </button>
-          <button
-            onClick={handleExportBackup}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-          >
-            💾 下载JSON
-          </button>
-          <label className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer">
-            📂 导入JSON
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleImportBackup}
-              className="hidden"
-            />
-          </label>
-          <button
-            onClick={handleGistBackup}
-            disabled={loading}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors disabled:opacity-50"
-          >
-            ☁️ 备份到Gist
-          </button>
-          <button
-            onClick={handleGistRestore}
-            disabled={loading}
-            className="px-4 py-2 bg-orange-600 text-white rounded-lg text-sm font-medium hover:bg-orange-700 transition-colors disabled:opacity-50"
-          >
-            🔄 从Gist恢复
           </button>
         </div>
 
