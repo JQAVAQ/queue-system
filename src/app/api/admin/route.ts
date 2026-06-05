@@ -81,7 +81,12 @@ export async function PUT(req: NextRequest) {
 
     switch (action) {
       case "startAuth": {
-        // Set user to AUTHENTICATING
+        // First, demote any current AUTHENTICATING user back to WAITING
+        await prisma.user.updateMany({
+          where: { status: "AUTHENTICATING" },
+          data: { status: "WAITING" },
+        });
+        // Then set the target user to AUTHENTICATING
         await prisma.user.update({
           where: { id: userId },
           data: { status: "AUTHENTICATING" },

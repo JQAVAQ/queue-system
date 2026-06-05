@@ -117,9 +117,57 @@ export default function AdminPage() {
       if (!data.error) {
         setUsers(data.users);
         setTokens(data.tokens);
+        // Auto-correct: ensure the first non-SUCCESS user is AUTHENTICATING
+        await autoCorrectAuthenticating(data.users);
       }
     } catch {
       // silent
+    }
+  }
+
+  async function autoCorrectAuthenticating(userList: UserData[]) {
+    const nonSuccess = userList.filter((u) => u.status !== "SUCCESS").sort((a, b) => a.position - b.position);
+    const currentAuth = userList.find((u) => u.status === "AUTHENTICATING");
+
+    // If no one is AUTHENTICATING but there are non-SUCCESS users, promote the first one
+    if (!currentAuth && nonSuccess.length > 0) {
+      await fetch("/api/admin", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": password,
+        },
+        body: JSON.stringify({ action: "startAuth", userId: nonSuccess[0].id }),
+      });
+      // Refresh again to get updated state
+      const res = await fetch("/api/admin", {
+        headers: { "x-admin-password": password },
+      });
+      const data = await res.json();
+      if (!data.error) {
+        setUsers(data.users);
+      }
+    }
+    // If current AUTHENTICATING user is not the first non-SUCCESS, fix it
+    else if (currentAuth && nonSuccess.length > 0 && currentAuth.id !== nonSuccess[0].id) {
+      // Demote current to their previous status (keep as is)
+      // Promote the correct first user
+      await fetch("/api/admin", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-password": password,
+        },
+        body: JSON.stringify({ action: "startAuth", userId: nonSuccess[0].id }),
+      });
+      // Refresh again
+      const res = await fetch("/api/admin", {
+        headers: { "x-admin-password": password },
+      });
+      const data = await res.json();
+      if (!data.error) {
+        setUsers(data.users);
+      }
     }
   }
 
