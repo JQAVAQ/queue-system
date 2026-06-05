@@ -21,8 +21,8 @@ export async function GET(req: NextRequest) {
       orderBy: { position: "asc" },
     });
 
-    // Auto-correct: ensure the first non-SUCCESS user is AUTHENTICATING
-    const nonSuccess = users.filter((u) => u.status !== "SUCCESS");
+    // Auto-correct: ensure the first queued user (non-SUCCESS, non-TIMEOUT) is AUTHENTICATING
+    const nonSuccess = users.filter((u) => u.status !== "SUCCESS" && u.status !== "TIMEOUT");
     const currentAuth = users.find((u) => u.status === "AUTHENTICATING");
 
     if (nonSuccess.length > 0) {
@@ -120,6 +120,19 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json({ success: true });
       }
 
+      case "restore": {
+        // Restore TIMEOUT user to bottom of queue with WAITING status
+        const maxPos = await prisma.user.aggregate({ _max: { position: true } });
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            status: "WAITING",
+            position: (maxPos._max.position ?? 0) + 1,
+          },
+        });
+        return NextResponse.json({ success: true });
+      }
+
       case "success": {
         // Mark as SUCCESS, promote next non-SUCCESS user
         await prisma.user.update({
@@ -188,7 +201,7 @@ export async function PUT(req: NextRequest) {
       }
 
       case "skip": {
-        // Skip without moving back
+        // Skip without moving back - permanently blacklist
         await prisma.user.update({
           where: { id: userId },
           data: { status: "TIMEOUT" },

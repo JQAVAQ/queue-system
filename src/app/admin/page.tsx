@@ -459,11 +459,12 @@ export default function AdminPage() {
   }
 
   // Main admin dashboard
-  // All non-SUCCESS users are in the queue (including FAILED and TIMEOUT)
-  const queuedUsers = users.filter((u) => u.status !== "SUCCESS");
+  // Queued users: non-SUCCESS and non-TIMEOUT (TIMEOUT = permanently blacklisted)
+  const queuedUsers = users.filter((u) => u.status !== "SUCCESS" && u.status !== "TIMEOUT");
   const successUsers = users.filter((u) => u.status === "SUCCESS");
+  const timeoutUsers = users.filter((u) => u.status === "TIMEOUT");
   const currentAuth = users.find((u) => u.status === "AUTHENTICATING");
-  // Next user to authenticate: first non-SUCCESS user by position
+  // Next user to authenticate: first queued user by position
   const nextInLine = !currentAuth ? queuedUsers[0] : null;
 
   return (
@@ -610,6 +611,12 @@ export default function AdminPage() {
             {showSuccessUsers ? "收起" : `✓ 已成功用户 (${successUsers.length})`}
           </button>
           <button
+            onClick={() => setShowTimeoutUsers(!showTimeoutUsers)}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            {showTimeoutUsers ? "收起" : `⏱ 超时/拉黑 (${timeoutUsers.length})`}
+          </button>
+          <button
             onClick={() => {
               setShowAnnouncement(!showAnnouncement);
               if (!showAnnouncement) fetchAnnouncement();
@@ -725,6 +732,45 @@ export default function AdminPage() {
                       <td className="py-2 pr-4 text-gray-900 font-medium">{u.wechatId}</td>
                       <td className="py-2 pr-4 text-gray-900 font-medium">{u.wechatNickname}</td>
                       <td className="py-2 pr-4 text-gray-800">{u.email}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Timeout users (blacklisted) */}
+        {showTimeoutUsers && timeoutUsers.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
+            <h3 className="font-medium text-gray-900 mb-3">⏱ 超时/拉黑用户</h3>
+            <p className="text-sm text-gray-600 mb-3">这些用户已被管理员手动跳过，不会自动参与排队。点击「恢复」可将其放回队列最底部。</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-gray-700">
+                    <th className="py-2 pr-4">原位置</th>
+                    <th className="py-2 pr-4">微信号</th>
+                    <th className="py-2 pr-4">昵称</th>
+                    <th className="py-2 pr-4">邮箱</th>
+                    <th className="py-2 pr-4">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {timeoutUsers.map((u) => (
+                    <tr key={u.id} className="border-b last:border-b-0">
+                      <td className="py-2 pr-4 text-gray-700 font-medium">{u.position}</td>
+                      <td className="py-2 pr-4 text-gray-900 font-medium">{u.wechatId}</td>
+                      <td className="py-2 pr-4 text-gray-900 font-medium">{u.wechatNickname}</td>
+                      <td className="py-2 pr-4 text-gray-800">{u.email}</td>
+                      <td className="py-2 pr-4">
+                        <button
+                          onClick={() => handleAction(u.id, "restore")}
+                          className="px-2 py-1 text-xs text-green-600 hover:bg-green-50 rounded transition-colors"
+                        >
+                          恢复
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
