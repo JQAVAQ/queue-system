@@ -90,13 +90,13 @@ export async function PUT(req: NextRequest) {
       }
 
       case "success": {
-        // Mark as SUCCESS, promote next WAITING user
+        // Mark as SUCCESS, promote next non-SUCCESS user
         await prisma.user.update({
           where: { id: userId },
           data: { status: "SUCCESS" },
         });
         const nextUser = await prisma.user.findFirst({
-          where: { status: "WAITING" },
+          where: { status: { not: "SUCCESS" } },
           orderBy: { position: "asc" },
         });
         if (nextUser) {
@@ -142,9 +142,9 @@ export async function PUT(req: NextRequest) {
           },
         });
 
-        // Step 4: Promote next WAITING user
+        // Step 4: Promote next non-SUCCESS user
         const nextUser = await prisma.user.findFirst({
-          where: { status: "WAITING" },
+          where: { status: { not: "SUCCESS" } },
           orderBy: { position: "asc" },
         });
         if (nextUser) {
@@ -163,7 +163,7 @@ export async function PUT(req: NextRequest) {
           data: { status: "TIMEOUT" },
         });
         const nextUser = await prisma.user.findFirst({
-          where: { status: "WAITING" },
+          where: { status: { not: "SUCCESS" } },
           orderBy: { position: "asc" },
         });
         if (nextUser) {
