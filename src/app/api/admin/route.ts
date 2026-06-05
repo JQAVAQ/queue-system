@@ -17,9 +17,35 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "管理员密码错误" }, { status: 401 });
     }
 
-    const users = await prisma.user.findMany({
+    let users = await prisma.user.findMany({
       orderBy: { position: "asc" },
     });
+
+    // Auto-correct: ensure the first non-SUCCESS user is AUTHENTICATING
+    const nonSuccess = users.filter((u) => u.status !== "SUCCESS");
+    const currentAuth = users.find((u) => u.status === "AUTHENTICATING");
+
+    if (nonSuccess.length > 0) {
+      const shouldBeAuth = nonSuccess[0];
+      if (!currentAuth || currentAuth.id !== shouldBeAuth.id) {
+        // Demote current AUTHENTICATING (if any) back to WAITING
+        if (currentAuth) {
+          await prisma.user.update({
+            where: { id: currentAuth.id },
+            data: { status: "WAITING" },
+          });
+        }
+        // Promote the first non-SUCCESS user to AUTHENTICATING
+        await prisma.user.update({
+          where: { id: shouldBeAuth.id },
+          data: { status: "AUTHENTICATING" },
+        });
+        // Re-fetch to get updated state
+        users = await prisma.user.findMany({
+          orderBy: { position: "asc" },
+        });
+      }
+    }
 
     const tokens = await prisma.token.findMany({
       where: { active: true },
